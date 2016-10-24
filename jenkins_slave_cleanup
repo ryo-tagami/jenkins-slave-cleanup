@@ -24,6 +24,12 @@ def get_arguments(argv):
     )
 
     argument_parser.add_argument(
+        '-f', '--force',
+        action='store_true',
+        help='Force the removal of a running container (uses SIGKILL)',
+    )
+
+    argument_parser.add_argument(
         'time',
         type=int,
         help='Slaves running longer than this in seconds will be removed.',
@@ -73,7 +79,28 @@ def main(argv=None):
 
         if uptime.total_seconds() > arguments.time:
             logger.info(
-                'Removing required for container "%s"...',
+                'Removal required for container "%s"...',
+                container['Id'],
+            )
+            try:
+                docker_client.remove_container(
+                    container=container['Id'],
+                    force=arguments.force,
+                )
+            except docker.errors.APIError as exception:
+                logger.warning(
+                    'Could not remove container "%s": "%s".',
+                    container['Id'],
+                    exception,
+                )
+            else:
+                logger.info(
+                    'Removed container "%s".',
+                    container['Id'],
+                )
+        else:
+            logger.info(
+                'Removal not required for container "%s".',
                 container['Id'],
             )
 
